@@ -1,0 +1,162 @@
+Sub WorksheetLoop2()
+
+' Chengyee Lor
+
+' Declare Current as a worksheet object variable.
+Dim ws As Worksheet
+
+' Loop through all of the worksheets in the active workbook.
+For Each ws In Worksheets
+
+    ' Label columns/row titles
+    ws.Cells(1, 9) = "Ticker"
+    ws.Cells(1, 10) = "Yearly Change"
+    ws.Cells(1, 11) = "Percent Change"
+    ws.Cells(1, 12) = "Total Stock Volume"
+    ws.Range("O2") = "Greatest % increase"
+    ws.Range("O3") = "Greatest % Decrease"
+    ws.Range("O4") = "Greatest total volume"
+    ws.Range("P1") = "Ticker"
+    ws.Range("Q1") = "Value"
+    
+    ' Declare Ticker as a string
+    Dim Ticker As String
+    
+    ' Declare Ope, Clo, Year_Change, and Per_Year_Change as Double
+    ' Used in calculating Yearly Change and Percent Change
+    Dim Ope As Double
+    Dim Clo As Double
+    Dim Year_Change As Double
+    Dim Per_Year_Change As Double
+
+    ' Declare Vol as Double
+    Dim Vol As Double
+    
+    ' Set Vol as 0, allows us to Vol in a for loop in order find total volume for a certain ticker
+    Vol = 0
+    
+    ' Declare Summary_Table_Row as Integer
+    Dim Summary_Table_Row As Integer
+    
+    ' Set Summary_Table_Row as 2; In conjuction with our for loop,
+    ' we are able to print off our results for each iteration in consecutive rows
+    Summary_Table_Row = 2
+    
+    ' For loop to calculate Yearly Change and Percent Change per Ticker for one year
+    For i = 2 To ws.Cells(Rows.Count, 1).End(xlUp).Row
+    
+        ' Takes the right 4 dights of our cell in our <date> column,
+        ' if it matches for Janurary 1 then our for loop follows as such
+        If Right(ws.Cells(i, 2).Value, 4) = 101 Then
+            
+            ' Stores the cell value of the ith row in column <open> into our variable Ope
+            Ope = ws.Cells(i, 3).Value
+            
+        ' If our right 4 digits of our value in our <date> column matches, then the for loop follows as such
+        ElseIf Right(ws.Cells(i + 1, 2).Value, 4) = 101 Then
+        
+            ' Stores the cell value of the ith row in column <close> into our variable Clo
+            Clo = ws.Cells(i, 6).Value
+            
+            ' Uses the variable Ope and Clo to calculate Year_Change
+            ' Note: Calculation is still on the ith iteriation which means it takes the cell value of <open> on our first day of the year
+            '   and the cell value of <close> on our last day of the year and calculates this per Ticker
+            Year_Change = (Clo - Ope)
+            
+                ' Calculates Percent Change for the year
+                ' Note: Accounts for if Ope for the beginning of the year is equal to 0
+                If Ope = 0 Then
+                    Per_Year_Change = (Clo - Ope) / 1
+                Else
+                    Per_Year_Change = (Clo - Ope) / Ope
+                End If
+            
+            ' Prints out our results on the ith iteriation into Column J
+            ws.Range("J" & Summary_Table_Row).Value = Year_Change
+            
+            ' Prints out our results on the ith iteriation into Column J
+            ws.Range("K" & Summary_Table_Row).Value = Per_Year_Change
+            
+            ' Formats the K column into percentage
+            ws.Range("K:K").NumberFormat = "0.00%"
+        End If
+        
+        ' Allows for the for loop to stay within the same ticker for this if statement
+        If ws.Cells(i + 1, 1).Value <> ws.Cells(i, 1).Value Then
+                
+                ' Stores the unique ticker value into our variable Ticker
+                Ticker = ws.Cells(i, 1).Value
+            
+                ' Since Vol was set to 0, the 1st iteration adds the value in cells(2,7) to 0 and continues to add to the previous sum
+                Vol = Vol + ws.Cells(i, 7)
+            
+            ' Prints off our results of our variable Ticker and Vol into column I and L
+            ws.Range("I" & Summary_Table_Row).Value = Ticker
+            ws.Range("L" & Summary_Table_Row).Value = Vol
+            
+            ' Once the results of our ith iteration has been printed into their respective columns, and row value of the
+            ' previous Summary_Table_Row this line of code allows to move down one row to print off our next results
+            Summary_Table_Row = Summary_Table_Row + 1
+            
+            Vol = 0
+        Else
+            ' Accoun
+            Vol = Vol + ws.Cells(i, 7)
+        End If
+    Next i
+
+    Dim rg As Range
+    
+    Dim cond1 As FormatCondition
+    Dim cond2 As FormatCondition
+    
+    Set rg = ws.Range("J2", ws.Range("J2").End(xlDown))
+ 
+    'clear any existing conditional formatting
+    rg.FormatConditions.Delete
+    
+    Set cond1 = rg.FormatConditions.Add(xlCellValue, xlGreater, "=0")
+    Set cond2 = rg.FormatConditions.Add(xlCellValue, xlLessEqual, "=0")
+    
+    With cond1
+    .Interior.Color = vbGreen
+    End With
+
+    With cond2
+    .Interior.Color = vbRed
+    End With
+    
+    Dim rng1 As Range
+    Dim rng2 As Range
+    Dim great As Double
+    Dim least As Double
+    Dim gvolume As Double
+    
+    Set rng1 = ws.Range("K:K")
+    Set rng2 = ws.Range("L:L")
+    
+    great = Application.WorksheetFunction.Max(rng1)
+    least = Application.WorksheetFunction.Min(rng1)
+    gvolume = Application.WorksheetFunction.Max(rng2)
+    
+    For i = 2 To ws.Cells(Rows.Count, 11).End(xlUp).Row
+        If ws.Cells(i, 11).Value = great Then
+            ws.Cells(2, 17).Value = ws.Cells(i, 11).Value
+            ws.Cells(2, 16).Value = ws.Cells(i, 9).Value
+        ElseIf ws.Cells(i, 11).Value = least Then
+            ws.Cells(3, 17).Value = ws.Cells(i, 11).Value
+            ws.Cells(3, 16).Value = ws.Cells(i, 9).Value
+        ElseIf ws.Cells(i, 12) = gvolume Then
+            ws.Cells(4, 17).Value = ws.Cells(i, 12).Value
+            ws.Cells(4, 16).Value = ws.Cells(i, 9).Value
+        End If
+    Next i
+    
+    ws.Range("Q2:Q3").NumberFormat = "0.00%"
+    
+    ws.Columns("A:Q").AutoFit
+    
+Next
+
+End Sub
+
